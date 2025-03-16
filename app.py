@@ -12,9 +12,8 @@ from src import semi_supervised
 # Sidebar navigation
 option = st.sidebar.selectbox("Lựa chọn", ["Titanic Data", "MNIST Data", "Linear Regression",  "SVM Mnist", "Decision Tree Mnist",  "Clustering", "Dim Redution", "Neural Network", "Semi Supervised",  "ML-Flow"])
 
-if(option == 'Titanic Data'):
-    pre_processing.display()
-elif(option == 'Linear Regression'):
+
+if(option == 'Linear Regression'):
     linear_regression.display()
 elif(option == 'MNIST Data'):
     MNIST_understand.display()
