@@ -1,5 +1,4 @@
 import streamlit as st
-import os
 from src import linear_regression 
 from src import pre_processing
 from src import svm_mnist
