@@ -48,4 +48,4 @@ def display():
     st.subheader("6. chuẩn hóa dữ liệu về khoảng 0-1")
     st.dataframe(df.head())
 
-    df.to_csv('../data/processed_data.csv')
+    df.to_csv('../../data/processed_data.csv')

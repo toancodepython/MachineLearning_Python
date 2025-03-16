@@ -8,7 +8,7 @@ from time import time
 import mlflow
 import os
 import tensorflow as tf
-
+from tensorflow.keras.datasets import mnist
 def load_mnist():
     (x_train, _), (x_test, _) = tf.keras.datasets.mnist.load_data()
     x = np.concatenate((x_train, x_test), axis=0)
@@ -50,24 +50,19 @@ def display():
     # Tải dữ liệu MNIST từ OpenML
     st.title("Giảm chiều dữ liệu MNIST với PCA & t-SNE")
     st.write("Tải dữ liệu MNIST từ OpenML...")
-    mnist = fetch_openml('mnist_784', version=1)
-    X, y = mnist.data.astype(np.float32), mnist.target.astype(int)
-
+    (X, y), (_, _) = mnist.load_data()
+    X = X.reshape(X.shape[0], -1) / 255.0
     # Hiển thị thông tin cơ bản
     st.write("### Thông tin dữ liệu:")
     st.write(f"Kích thước dữ liệu: {X.shape}")
     st.write(f"Số nhãn khác nhau: {np.unique(y)}")
-
-    # Chuẩn hóa dữ liệu (chia cho 255)
-    X /= 255.0
     st.write("Dữ liệu đã được chuẩn hóa bằng cách chia cho 255.")
-
     # Người dùng chọn số lượng mẫu
-    num_samples = st.text_input("Nhập số lượng mẫu từ 1 đến 70000:", key = "reduction_1")
+    num_samples = st.text_input("Nhập số lượng mẫu từ 1 đến 60000:", key = "reduction_1")
     if st.button("Xác nhận số lượng mẫu", key = "btn_11"):
         try:
             num_samples = int(num_samples)
-            if 1 <= num_samples <= 70000:
+            if 1 <= num_samples <= 60000:
                 X, y = X[:num_samples], y[:num_samples]
                 st.success(f"Sử dụng {num_samples} mẫu từ tập dữ liệu.")
             else:
@@ -81,22 +76,18 @@ def display():
     if option == "PCA":
         n_pca = st.text_input("Nhập số thành phần PCA:", key = "reduction_2")
         if st.button("Thực hiện PCA", key = "btn_10"):
-            try:
-                n_pca = int(n_pca)
-                st.write(f"Thực hiện PCA với {n_pca} thành phần chính...")
-                pca = PCA(n_components=n_pca)
-                X_pca = pca.fit_transform(X)
-                 # Đánh giá tỉ lệ phương sai giữ lại
-                explained_variance = np.sum(pca.explained_variance_ratio_)
-                st.write(f"Tỉ lệ phương sai giữ lại sau PCA: {explained_variance:.4f}")
-                st.session_state['explained_variance'] = explained_variance
-            except ValueError:
-                st.error("Vui lòng nhập một số nguyên hợp lệ cho số thành phần PCA.")
+            n_pca = int(n_pca)
+            st.write(f"Thực hiện PCA với {n_pca} thành phần chính...")
+            pca = PCA(n_components=n_pca)
+            X_pca = pca.fit_transform(X)
+                # Đánh giá tỉ lệ phương sai giữ lại
+            explained_variance = np.sum(pca.explained_variance_ratio_)
+            st.write(f"Tỉ lệ phương sai giữ lại sau PCA: {explained_variance:.4f}")
+            st.session_state['explained_variance'] = explained_variance
 
     elif option == "t-SNE":
         perplexity = st.text_input("Nhập Perplexity của t-SNE:", key = "reduction_3")
         if st.button("Thực hiện t-SNE", key = "btn_9"):
-            try:
                 perplexity = int(perplexity)
                 st.write("Thực hiện t-SNE...")
                 t0 = time()
@@ -113,8 +104,6 @@ def display():
                 ax.set_ylabel("t-SNE Dimension 2")
                 ax.set_title("Biểu diễn MNIST bằng t-SNE")
                 st.pyplot(fig)
-            except ValueError:
-                st.error("Vui lòng nhập một số nguyên hợp lệ cho perplexity của t-SNE.")
     model_name = st.text_input("🏷️ Nhập tên mô hình", key = "reduction_4")
     if st.button("Log Experiment Dimmension Reduce" , key = "btn_8"):
         log_experiment(model_name, param=st.session_state['explained_variance']) 
@@ -122,5 +111,3 @@ def display():
     # Hiển thị trạng thái log thành công
     if st.session_state.log_success:
         st.success("🚀 Experiment đã được log thành công!")
-    
-display()

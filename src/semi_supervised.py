@@ -177,5 +177,3 @@ def display():
             st.success("🚀 Experiment đã được log thành công!  Chuyển qua tab ML_Flow để xem kết quả")
 
         
-
-display()
