@@ -9,7 +9,6 @@ import mlflow
 import os
 import tensorflow as tf
 
-@st.cache_data
 def load_mnist():
     (x_train, _), (x_test, _) = tf.keras.datasets.mnist.load_data()
     x = np.concatenate((x_train, x_test), axis=0)

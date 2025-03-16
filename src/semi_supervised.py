@@ -170,7 +170,7 @@ def display():
                 confidence = np.max(prediction)
                 st.write(f"Predicted Digit: {predicted_digit}, Confidence: {confidence:.2f}")
         model_name = st.text_input("🏷️ Nhập tên mô hình", key = "semi_0")
-        if st.button("Log Model Neural Network", key = "semi_1"):
+        if st.button("Log Model Semi Supervised", key = "semi_1"):
             log_experiment(model_name) 
         # Hiển thị trạng thái log thành công
         if st.session_state.log_success:
