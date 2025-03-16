@@ -1,0 +1,12 @@
+mlflow
+streamlit
+scikit-learn
+pandas
+imblearn
+tensorflow
+seaborn
+dagshub
+opencv-contrib-python-headless
+streamlit_drawable_canvas
+torch
+torchvision
