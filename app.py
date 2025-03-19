@@ -1,34 +1,24 @@
+import sys
+import os
+sys.path.append(os.path.abspath("src"))
 import streamlit as st
-from src import linear_regression 
-from src import pre_processing
-from src import svm_mnist
-from src import decision_tree_mnist
-from src import clustering
-from src import mlflow_web
-from src import neural
-from src import MNIST_understand
-from src import reduction
-from src import semi_supervised
+import linear_regression 
+import svm_mnist
+import decision_tree_mnist
+import clustering
+import neural
+import semi_supervised_2
 # Sidebar navigation
-option = st.sidebar.selectbox("Lựa chọn", ["Titanic Data", "MNIST Data", "Linear Regression",  "SVM Mnist", "Decision Tree Mnist",  "Clustering", "Dim Redution", "Neural Network", "Semi Supervised",  "ML-Flow"])
+option = st.sidebar.selectbox("Lựa chọn", [ "Semi Supervised", "Neural Network", "Decision Tree Mnist",  "SVM Mnist", "Clustering", "Linear Regression"])
 
-if(option == 'Titanic Data'):
-    pre_processing.display()
-elif(option == 'Linear Regression'):
-    linear_regression.display()
-elif(option == 'MNIST Data'):
-    MNIST_understand.display()
-elif(option == 'SVM Mnist'):
-    svm_mnist.display()
+if(option == 'SVM Mnist'):
+    svm_mnist.svm()
 elif(option == 'Decision Tree Mnist'):
-    decision_tree_mnist.display()
+    decision_tree_mnist.decision()
 elif(option == 'Clustering'):
-    clustering.display()
-elif(option == 'Dim Redution'):
-    reduction.display()
-elif(option == 'ML-Flow'):
-    mlflow_web.display()
+    clustering.clustering()
+
 elif(option == 'Neural Network'):
     neural.display()
 elif(option == 'Semi Supervised'):
-    semi_supervised.display()
+    semi_supervised_2.semisupervised()

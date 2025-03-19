@@ -26,6 +26,16 @@ def list_logged_models(id):
     } for r in runs])
     return df
 
+def fetch_run_info(run_id):
+    try:
+        run = mlflow.get_run(run_id)
+        params = run.data.params
+        metrics = run.data.metrics
+        return params, metrics
+    except Exception as e:
+        st.warning(f"Không thể lấy thông tin run: {e}")
+        return {}, {}
+    
 def display():
     # Khởi tạo kết nối với DagsHub
     try:
@@ -43,7 +53,7 @@ def display():
         models_df = list_logged_models(id=experiment_id)
         available_run_names = models_df["Run Name"].tolist()
         
-        st.subheader("📌 Các mô hình đã log")
+        st.subheader("📌 Các mô hình trong thí nghiệm")
         st.dataframe(models_df.style.set_properties(**{"background-color": "#f0f2f6", "color": "black"}), use_container_width=True)
 
         # Chọn các Run Name để so sánh
@@ -87,6 +97,24 @@ def display():
                 ax.tick_params(axis="x", rotation=45, labelsize=8)
                 ax.tick_params(axis="y", labelsize=10)
                 st.pyplot(fig)
+        st.subheader("📈 Xem chi tiết một mô hình")
+        selected_view_run_names = st.selectbox("🔍 Chọn Run Name để xem chi tiết", available_run_names)
+        if selected_view_run_names:
+            run__view_info = models_df[models_df["Run Name"] == selected_view_run_names].iloc[0]
+            run_view_id = run__view_info["Run ID"]
+            params, metrics = fetch_run_info(run_view_id)
+
+            st.subheader("📌 Parameters")
+            if params:
+                st.json(params)
+            else:
+                st.write("Không có Parameters.")
+
+            st.subheader("📈 Metrics")
+            if metrics:
+                st.json(metrics)
+            else:
+                st.write("Không có Metrics.")
     except Exception as e:
         st.warning("Không thể kết nối với MLflow hoặc DagsHub. Vui lòng kiểm tra cài đặt hoặc không có RunId được tìm thấy trong thí nghiệm")
         experiments = []

@@ -87,6 +87,7 @@ def display():
             st.write("train_recall", train_recall)
             st.write("valid_recall", valid_recall)
 
+    
         if st.session_state.model is not None:
             if st.button("Dự đoán" , key = "btn_8"):
                 st.sidebar.header("Nhập thông tin dự đoán")

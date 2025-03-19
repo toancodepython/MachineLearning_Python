@@ -48,7 +48,7 @@ def display():
     if "explained_variance" not in st.session_state:
             st.session_state.explained_variance = 0
     # Tải dữ liệu MNIST từ OpenML
-    st.title("Giảm chiều dữ liệu MNIST với PCA & t-SNE")
+    st.title("📊 Giảm chiều dữ liệu MNIST với PCA & t-SNE")
     st.write("Tải dữ liệu MNIST từ OpenML...")
     (X, y), (_, _) = mnist.load_data()
     X = X.reshape(X.shape[0], -1) / 255.0
@@ -74,6 +74,7 @@ def display():
     option = st.selectbox("Chọn phương pháp giảm chiều:", ["PCA", "t-SNE"])
 
     if option == "PCA":
+        model_name = st.text_input("🏷️ Nhập tên mô hình", key = "reduction_10")
         n_pca = st.text_input("Nhập số thành phần PCA:", key = "reduction_2")
         if st.button("Thực hiện PCA", key = "btn_10"):
             n_pca = int(n_pca)
@@ -84,9 +85,11 @@ def display():
             explained_variance = np.sum(pca.explained_variance_ratio_)
             st.write(f"Tỉ lệ phương sai giữ lại sau PCA: {explained_variance:.4f}")
             st.session_state['explained_variance'] = explained_variance
+            log_experiment(model_name, param=st.session_state['explained_variance']) 
 
     elif option == "t-SNE":
         perplexity = st.text_input("Nhập Perplexity của t-SNE:", key = "reduction_3")
+        model_name = st.text_input("🏷️ Nhập tên mô hình", key = "reduction_4")
         if st.button("Thực hiện t-SNE", key = "btn_9"):
                 perplexity = int(perplexity)
                 st.write("Thực hiện t-SNE...")
@@ -104,10 +107,18 @@ def display():
                 ax.set_ylabel("t-SNE Dimension 2")
                 ax.set_title("Biểu diễn MNIST bằng t-SNE")
                 st.pyplot(fig)
-    model_name = st.text_input("🏷️ Nhập tên mô hình", key = "reduction_4")
-    if st.button("Log Experiment Dimmension Reduce" , key = "btn_8"):
-        log_experiment(model_name, param=st.session_state['explained_variance']) 
+                log_experiment(model_name, param=st.session_state['explained_variance']) 
 
-    # Hiển thị trạng thái log thành công
-    if st.session_state.log_success:
-        st.success("🚀 Experiment đã được log thành công!")
+ 
+
+def clustering():
+    tab1, tab3 = st.tabs([ "⚙️ Huấn luyện", "🔥Mlflow"])
+
+    with tab1:
+        display()
+    with tab3:
+        import mlflow_web
+        mlflow_web.display()
+  
+
+clustering()

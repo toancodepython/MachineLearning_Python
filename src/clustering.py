@@ -1,4 +1,3 @@
-import requests
 import streamlit as st
 import numpy as np
 import tensorflow as tf
@@ -33,7 +32,7 @@ def reduce_dimensionality(data, method, n_components):
     
     return reducer.fit_transform(data)
 
-def log_experiment(model_name):
+def log_experiment(model_name, sil):
     try:
         DAGSHUB_USERNAME = "toancodepython"  # Thay bằng username của bạn
         DAGSHUB_REPO_NAME = "ml-flow"
@@ -52,7 +51,10 @@ def log_experiment(model_name):
             with mlflow.start_run(run_name = model_name) as run:
                 print('Logging...')
                 mlflow.log_param("Cluster", st.session_state.num_clusters)
-                mlflow.log_metric("Silhouette Score", 100)
+                mlflow.log_param("Reducing Method", st.session_state.dim_reduction)
+                mlflow.log_param("Dim after Reducing", st.session_state.n_components)
+
+                mlflow.log_metric("Silhouette Score", sil)
                 st.success(f"✅ Mô hình được log vào thí nghiệm: {experiment_name}")
 
         else:
@@ -90,15 +92,13 @@ def display():
             st.session_state.log_clicked = False
         if "log_success" not in st.session_state:
             st.session_state.log_success = False
-        st.title("Clustering on MNIST with Dimensionality Reduction")
+        st.title("📊  Clustering on MNIST")
 
         # Load data
         data = load_mnist()
-        df = pd.DataFrame(data)
-        st.dataframe(df.head())
-
+    
         # Dataset selection
-        st.write("## Dataset Options")
+        st.header("📂 Dataset Options")
         st.write(f"Sử dụng bộ dữ liệu từ MLOpen")
         st.session_state.sample_size = int(st.text_input("Number of samples (max = 70000)", st.session_state.sample_size, key = "clustering_1"))
         st.session_state.train_size = float(st.text_input("Train set ratio", st.session_state.train_size, key = "clustering_2"))
@@ -117,7 +117,7 @@ def display():
             st.success("Chia tập dữ liệu thành công!")
 
         # Choose dimensionality reduction method
-        st.write("## Dimensionality Reduction")
+        st.header("📂 Dimensionality Reduction")
         st.session_state.dim_reduction = st.selectbox("Select method", ["PCA", "t-SNE"])
         st.session_state.n_components = int(st.text_input("Number of dimensions", st.session_state.n_components, key = "clustering_3"))
 
@@ -141,7 +141,8 @@ def display():
             st.session_state.eps = float(st.text_input("Epsilon (eps)", st.session_state.eps, key = "clustering_6"))
             st.session_state.min_samples = int(st.text_input("Min Samples", st.session_state.min_samples, key = "clustering_5"))
 
-        if st.button("Train Model", key = "btn_2"):
+        model_name = st.text_input("🏷️ Nhập tên mô hình", key = "clustering_7")
+        if st.button("▶️ Train Model", key = "btn_2"):
             if "x_train" not in st.session_state or "x_val" not in st.session_state:
                 st.warning("Vui lòng chia tập dữ liệu trước!")
                 return
@@ -166,17 +167,19 @@ def display():
 
             # Display evaluation metrics
             st.write("### Evaluation Metrics")
-            st.write(f"- **Inertia (WCSS):** {inertia}")
             sil = silhouette_score(st.session_state.x_train, labels) if len(set(labels)) > 1 else 'N/A'
             st.write(f"- **Silhouette Score:** {sil}")
             st.success("Training Completed!")
 
-        model_name = st.text_input("🏷️ Nhập tên mô hình", key = "clustering_7")
-        if st.button("Log Experiment Clustering", key = "btn_4"):
-            log_experiment(model_name) 
-
-        # Hiển thị trạng thái log thành công
-        if st.session_state.log_success:
-            st.success("🚀 Experiment đã được log thành công!")
+            log_experiment(model_name, sil) 
                 
-display()
+def clustering():
+    tab1, tab3 = st.tabs([ "⚙️ Huấn luyện", "🔥Mlflow"])
+
+    with tab1:
+        display()
+    with tab3:
+        import mlflow_web
+        mlflow_web.display()
+   
+clustering()

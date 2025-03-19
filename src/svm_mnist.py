@@ -18,6 +18,7 @@ def load_data():
     return train_data, X, y
 def log_experiment(model_name):
     try:
+        st.warning('Model đang được log...')
         DAGSHUB_USERNAME = "toancodepython"  # Thay bằng username của bạn
         DAGSHUB_REPO_NAME = "ml-flow"
         DAGSHUB_TOKEN = "a6e8c1682e60df503248dcf37f42ca15ceaee13a"  # Thay bằng Access Token của bạn
@@ -32,13 +33,14 @@ def log_experiment(model_name):
             print(f"Experiment ID: {experiment_id}")
             mlflow.set_experiment(experiment_name)
             with mlflow.start_run(run_name = model_name) as run:
-                print('Logging...')
                 mlflow.log_param("C", st.session_state.c)
                 mlflow.log_param("Kernel", st.session_state.kernel)
                 
                 mlflow.log_metric("Test Accuracy", st.session_state.accuracy)
                 mlflow.log_metric("Validation Accuracy", st.session_state.accuracy_val)
 
+                mlflow.sklearn.log_model(st.session_state.model, "model")
+                mlflow.register_model(f"runs:/{run.info.run_id}/model", model_name)
                 st.success(f"✅ Mô hình được log vào thí nghiệm: {experiment_name}")
         else:
             # Nếu thí nghiệm chưa tồn tại, tạo mới
@@ -46,45 +48,22 @@ def log_experiment(model_name):
         print("Active Run:", mlflow.active_run())
     except Exception as e:
         st.warning("Không thể kết nối với MLflow hoặc DagsHub. Vui lòng kiểm tra cài đặt.")
-def show_sample_images():
-    train_data = pd.read_csv("data/mnist/train.csv")
-    unique_labels = train_data.iloc[:, 0].unique()
-    fig, axes = plt.subplots(2, 5, figsize=(10, 5))
-    label_count = 0
-    
-    for i, ax in enumerate(axes.flat):
-        if label_count >= len(unique_labels):
-            break
-        sample = train_data[train_data.iloc[:, 0] == unique_labels[label_count]].iloc[0, 1:].values.reshape(28, 28)
-        ax.imshow(sample, cmap='gray')
-        ax.set_title(f"Label: {unique_labels[label_count]}", fontsize=10)
-        ax.axis("off")
-        label_count += 1
-    st.pyplot(fig)
-
-def plot_label_distribution(y):
-    fig, ax = plt.subplots(figsize=(8, 5))
-    pd.Series(y).value_counts().sort_index().plot(kind="bar", ax=ax, color="skyblue")
-    ax.set_title("Label Distribution in Dataset")
-    ax.set_xlabel("Digit Label")
-    ax.set_ylabel("Count")
-    st.pyplot(fig)
 
 def display():
-    st.title("Nhận diện chữ số MNIST bằng SVM")
-    st.header("Tham số mô hình")
+    st.title("📊 Classificaton on MNIST with SVM")
+    st.header("📂 Data Selection")
     (x, y), (_, _) = mnist.load_data()
     x = x / 255.0  # Chuẩn hóa dữ liệu
     x = x.reshape(x.shape[0], -1)
     # Lựa chọn số lượng mẫu dữ liệu
     st.write("**Số lượng mẫu**: Số lượng ảnh được sử dụng cho việc huấn luyện và kiểm tra.")
-    num_samples = int(st.number_input("Số lượng mẫu", 1000, 70000, 70000, step=1000))
+    num_samples = int(st.number_input("Số lượng mẫu", 1000, 70000, 70000, step=1000, key='svm_1'))
 
     st.write("**Tỉ lệ tập huấn luyện**: Phần trăm dữ liệu được sử dụng để huấn luyện mô hình.")
-    train_ratio = float(st.number_input("Tỉ lệ tập huấn luyện", 0.5, 0.9, 0.8, step=0.05))
+    train_ratio = float(st.number_input("Tỉ lệ tập huấn luyện", 0.5, 0.9, 0.8, step=0.05, key='svm_2'))
 
     st.write("**Tỉ lệ tập validation**: Phần trăm dữ liệu được sử dụng để đánh giá mô hình trong quá trình huấn luyện.")
-    val_ratio = float(st.number_input("Tỉ lệ tập validation", 0.05, 0.3, 0.1, step=0.05))
+    val_ratio = float(st.number_input("Tỉ lệ tập validation", 0.05, 0.3, 0.1, step=0.05, key= 'svm_3'))
     test_ratio = 1 - train_ratio - val_ratio
 
     # Chia tập dữ liệu
@@ -100,8 +79,11 @@ def display():
         st.session_state.log_success = False
     if "accuracy_val" not in st.session_state:
         st.session_state.accuracy_val = 0
-
+    if "model" not in st.session_state:
+        st.session_state.model = None
     # Choose SVM parameters
+    st.header("⚙️ SVM Parameters")
+
     st.write("- **Kernel**: Defines the type of hyperplane used to separate data (linear, polynomial, RBF, or sigmoid).")
     kernel = st.selectbox("Kernel type", ["linear", "poly", "rbf", "sigmoid"])
     st.session_state.kernel = kernel
@@ -110,51 +92,85 @@ def display():
     C = st.slider("C (Regularization parameter)", min_value=0.01, max_value=10.0, value=1.0, step=0.01)
     st.session_state.c = C
 
-
-    if st.button("Huấn luyện mô hình"):
+    model_name = st.text_input("🏷️ Nhập tên mô hình", key = "svm_5")
+    if st.button("▶️ Huấn luyện mô hình", key='svm_btn_2'):
         with st.spinner("Đang huấn luyện..."):
             model = SVC(kernel=kernel, C=C, gamma='auto', probability=True)
             model.fit(x_train, y_train)
             st.session_state.model = model
             y_pred_classes = model.predict(x_test) 
             st.session_state.accuracy = accuracy_score(y_test, y_pred_classes) 
-
             y_pred_val_classes = model.predict(x_val) 
             st.session_state.accuracy_val = accuracy_score(y_val, y_pred_val_classes) 
+            log_experiment(model_name) 
         st.success("Huấn luyện thành công!")
     st.write(f"Độ chính xác trên tập Test: {st.session_state.accuracy:.4f}")
     st.write(f"Độ chính xác trên tập Valdation: {st.session_state.accuracy_val:.4f}")
 
-    st.subheader("Vẽ một chữ số (0-9)")
-    canvas = st_canvas(
-        fill_color="black",
-        stroke_width=10,
-        stroke_color="white",
-        background_color="black",
-        height=200,
-        width=200,
-        drawing_mode="freedraw",
-        key="canvas",
-    )
-    # Dự đoán chữ số
-    if 'model' in st.session_state:
-        if canvas.image_data is not None and st.button("Dự đoán"):
-            image = cv2.cvtColor(canvas.image_data.astype(np.uint8), cv2.COLOR_RGBA2GRAY)
-            image = cv2.resize(image, (28, 28))
-            image = image / 255.0
-            image = image.reshape(1, -1)  # Chuyển thành vector 1D (1, 784)
-            pred_proba = st.session_state.model.predict_proba(image)
-            predicted_digit = np.argmax(pred_proba)
-            confidence = np.max(pred_proba)
-            
-            st.write(f"Chữ số dự đoán: {predicted_digit}")
-            st.write(f"Độ tin cậy: {confidence:.4f}")
+    if st.session_state.model:
+        model_dict = get_logged_models('SVM_Classification')
+        selected_model_name = st.selectbox("Chọn mô hình để dự đoán:", list(model_dict.keys()))
+        st.subheader("Draw a digit and predict")
 
+        canvas_result = st_canvas(
+            fill_color="black",  # Màu nền
+            stroke_width=10,
+            stroke_color="black",
+            background_color="white",
+            height=250,
+            width=250,
+            drawing_mode="freedraw",
+            key='svm_canva_1'
+        )
+        if st.button("Predict Drawn Digit", key='svm_btn_1'):
+            if canvas_result.image_data is not None:
+                print('start predict')
+                try: 
+                    run_id = model_dict[selected_model_name]
+                    model_uri = f"runs:/{run_id}/model"
+                    model_loaded = mlflow.sklearn.load_model(model_uri)
+                    if(model_loaded): st.success('Model loaded')
+                    img = cv2.cvtColor(canvas_result.image_data.astype(np.uint8), cv2.COLOR_RGBA2GRAY)
+                    img = cv2.resize(img, (28, 28))
+                    img = img.reshape(1, -1)  # Chuyển thành vector 1D (1, 784)
+                    img = img / 255.0
+                    img = np.expand_dims(img, axis=0)
+                    prediction = model_loaded.predict_proba(img)
+                    st.write(prediction)
+                    predicted_digit = np.argmax(prediction)
+                    confidence = np.max(prediction)
+                    st.write(f"Predicted Digit: {predicted_digit}, Confidence: {confidence:.2f}")
+                except Exception as e:
+                    st.warning(e)
+            else:
+                st.warning("⚠️ Vui lòng vẽ một số trước khi dự đoán!")
 
-        model_name = st.text_input("🏷️ Nhập tên mô hình", key = "0")
-        if st.button("Log SVM Model", key = "btn_svm1"):
-            log_experiment(model_name) 
+def get_logged_models(experiment_name):
+    try:
 
-        # Hiển thị trạng thái log thành công
-        if st.session_state.log_success:
-            st.success("🚀 Experiment đã được log thành công!  Chuyển qua tab ML_Flow để xem kết quả")
+        DAGSHUB_USERNAME = "toancodepython"
+        DAGSHUB_REPO_NAME = "ml-flow"
+        DAGSHUB_TOKEN = "a6e8c1682e60df503248dcf37f42ca15ceaee13a"
+        mlflow.set_tracking_uri("https://dagshub.com/toancodepython/ml-flow.mlflow")
+        os.environ["MLFLOW_TRACKING_USERNAME"] = DAGSHUB_USERNAME
+        os.environ["MLFLOW_TRACKING_PASSWORD"] = DAGSHUB_TOKEN
+
+        experiment = next((exp for exp in mlflow.search_experiments() if exp.name == experiment_name), None)
+        if experiment:
+            runs = mlflow.search_runs(experiment_ids=[experiment.experiment_id])
+            return {row["tags.mlflow.runName"]: row["run_id"] for _, row in runs.iterrows()}
+        return {}
+    except Exception as e:
+        st.warning("Không thể lấy danh sách mô hình từ MLflow.")
+        
+        return []
+def svm():
+    tab1, tab3 = st.tabs([ "⚙️ Huấn luyện",  "🔥Mlflow"])
+    with tab1:
+        display()
+  
+    with tab3:
+        import mlflow_web
+        mlflow_web.display()
+
+svm()
